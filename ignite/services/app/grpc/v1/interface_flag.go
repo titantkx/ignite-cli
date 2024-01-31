@@ -30,7 +30,7 @@ var flagTypes = map[string]Flag_Type{
 }
 
 func newDefaultFlagValueError(typeName, value string) error {
-	return errors.Errorf("invalid default value for plugin command %s flag: %s", typeName, value)
+	return errors.Errorf("invalid default value for app command %s flag: %s", typeName, value)
 }
 
 func (f *Flag) exportToFlagSet(fs *pflag.FlagSet) error {

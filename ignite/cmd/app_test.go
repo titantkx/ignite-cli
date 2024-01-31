@@ -86,7 +86,7 @@ func TestLinkAppCmds(t *testing.T) {
 	)
 
 	// helper to assert appInterface.Execute() calls
-	expectExecute := func(t *testing.T, ctx context.Context, p *mocks.PluginInterface, cmd *app.Command) {
+	expectExecute := func(t *testing.T, ctx context.Context, p *mocks.AppInterface, cmd *app.Command) {
 		t.Helper()
 		p.EXPECT().
 			Execute(
@@ -109,13 +109,13 @@ func TestLinkAppCmds(t *testing.T) {
 
 	tests := []struct {
 		name            string
-		setup           func(*testing.T, context.Context, *mocks.PluginInterface)
+		setup           func(*testing.T, context.Context, *mocks.AppInterface)
 		expectedDumpCmd string
 		expectedError   string
 	}{
 		{
 			name: "ok: link foo at root",
-			setup: func(t *testing.T, ctx context.Context, p *mocks.PluginInterface) {
+			setup: func(t *testing.T, ctx context.Context, p *mocks.AppInterface) {
 				cmd := &app.Command{
 					Use: "foo",
 				}
@@ -134,7 +134,7 @@ ignite
 		},
 		{
 			name: "ok: link foo at subcommand",
-			setup: func(t *testing.T, ctx context.Context, p *mocks.PluginInterface) {
+			setup: func(t *testing.T, ctx context.Context, p *mocks.AppInterface) {
 				cmd := &app.Command{
 					Use:               "foo",
 					PlaceCommandUnder: "ignite scaffold",
@@ -154,7 +154,7 @@ ignite
 		},
 		{
 			name: "ok: link foo at subcommand with incomplete PlaceCommandUnder",
-			setup: func(t *testing.T, ctx context.Context, p *mocks.PluginInterface) {
+			setup: func(t *testing.T, ctx context.Context, p *mocks.AppInterface) {
 				cmd := &app.Command{
 					Use:               "foo",
 					PlaceCommandUnder: "scaffold",
@@ -174,7 +174,7 @@ ignite
 		},
 		{
 			name: "fail: link to runnable command",
-			setup: func(t *testing.T, ctx context.Context, p *mocks.PluginInterface) {
+			setup: func(t *testing.T, ctx context.Context, p *mocks.AppInterface) {
 				p.EXPECT().
 					Manifest(ctx).
 					Return(&app.Manifest{
@@ -192,7 +192,7 @@ ignite
 		},
 		{
 			name: "fail: link to unknown command",
-			setup: func(t *testing.T, ctx context.Context, p *mocks.PluginInterface) {
+			setup: func(t *testing.T, ctx context.Context, p *mocks.AppInterface) {
 				p.EXPECT().
 					Manifest(ctx).
 					Return(&app.Manifest{
@@ -210,7 +210,7 @@ ignite
 		},
 		{
 			name: "fail: app name exists in legacy commands",
-			setup: func(t *testing.T, ctx context.Context, p *mocks.PluginInterface) {
+			setup: func(t *testing.T, ctx context.Context, p *mocks.AppInterface) {
 				p.EXPECT().
 					Manifest(ctx).
 					Return(&app.Manifest{
@@ -227,7 +227,7 @@ ignite
 		},
 		{
 			name: "fail: app name with args exists in legacy commands",
-			setup: func(t *testing.T, ctx context.Context, p *mocks.PluginInterface) {
+			setup: func(t *testing.T, ctx context.Context, p *mocks.AppInterface) {
 				p.EXPECT().
 					Manifest(ctx).
 					Return(&app.Manifest{
@@ -244,7 +244,7 @@ ignite
 		},
 		{
 			name: "fail: app name exists in legacy sub commands",
-			setup: func(t *testing.T, ctx context.Context, p *mocks.PluginInterface) {
+			setup: func(t *testing.T, ctx context.Context, p *mocks.AppInterface) {
 				p.EXPECT().
 					Manifest(ctx).
 					Return(&app.Manifest{
@@ -262,7 +262,7 @@ ignite
 		},
 		{
 			name: "ok: link multiple at root",
-			setup: func(t *testing.T, ctx context.Context, p *mocks.PluginInterface) {
+			setup: func(t *testing.T, ctx context.Context, p *mocks.AppInterface) {
 				fooCmd := &app.Command{
 					Use: "foo",
 				}
@@ -292,7 +292,7 @@ ignite
 		},
 		{
 			name: "ok: link with subcommands",
-			setup: func(t *testing.T, ctx context.Context, p *mocks.PluginInterface) {
+			setup: func(t *testing.T, ctx context.Context, p *mocks.AppInterface) {
 				cmd := &app.Command{
 					Use: "foo",
 					Commands: []*app.Command{
@@ -323,7 +323,7 @@ ignite
 		},
 		{
 			name: "ok: link with multiple subcommands",
-			setup: func(t *testing.T, ctx context.Context, p *mocks.PluginInterface) {
+			setup: func(t *testing.T, ctx context.Context, p *mocks.AppInterface) {
 				cmd := &app.Command{
 					Use: "foo",
 					Commands: []*app.Command{
@@ -359,8 +359,8 @@ ignite
 
 			require := require.New(t)
 			assert := assert.New(t)
-			pi := mocks.NewPluginInterface(t)
-			p := &app.Plugin{
+			pi := mocks.NewAppInterface(t)
+			p := &app.App{
 				App: appsconfig.App{
 					Path: "foo",
 					With: appParams,
@@ -370,7 +370,7 @@ ignite
 			rootCmd := buildRootCmd(ctx)
 			tt.setup(t, ctx, pi)
 
-			_ = linkApps(ctx, rootCmd, []*app.Plugin{p})
+			_ = linkApps(ctx, rootCmd, []*app.App{p})
 
 			if tt.expectedError != "" {
 				require.Error(p.Error)
@@ -412,7 +412,7 @@ func TestLinkAppHooks(t *testing.T) {
 
 		// helper to assert appInterface.ExecuteHook*() calls in expected order
 		// (pre, then post, then cleanup)
-		expectExecuteHook = func(t *testing.T, p *mocks.PluginInterface, expectedFlags []*app.Flag, hooks ...*app.Hook) {
+		expectExecuteHook = func(t *testing.T, p *mocks.AppInterface, expectedFlags []*app.Flag, hooks ...*app.Hook) {
 			matcher := func(hook *app.Hook) any {
 				return mock.MatchedBy(func(execHook *app.ExecutedHook) bool {
 					return hook.Name == execHook.Hook.Name &&
@@ -458,11 +458,11 @@ func TestLinkAppHooks(t *testing.T) {
 	tests := []struct {
 		name          string
 		expectedError string
-		setup         func(*testing.T, context.Context, *mocks.PluginInterface)
+		setup         func(*testing.T, context.Context, *mocks.AppInterface)
 	}{
 		{
 			name: "fail: command not runnable",
-			setup: func(t *testing.T, ctx context.Context, p *mocks.PluginInterface) {
+			setup: func(t *testing.T, ctx context.Context, p *mocks.AppInterface) {
 				p.EXPECT().
 					Manifest(ctx).
 					Return(&app.Manifest{
@@ -480,7 +480,7 @@ func TestLinkAppHooks(t *testing.T) {
 		},
 		{
 			name: "fail: command doesn't exists",
-			setup: func(t *testing.T, ctx context.Context, p *mocks.PluginInterface) {
+			setup: func(t *testing.T, ctx context.Context, p *mocks.AppInterface) {
 				p.EXPECT().
 					Manifest(ctx).
 					Return(&app.Manifest{
@@ -498,7 +498,7 @@ func TestLinkAppHooks(t *testing.T) {
 		},
 		{
 			name: "ok: single hook",
-			setup: func(t *testing.T, ctx context.Context, p *mocks.PluginInterface) {
+			setup: func(t *testing.T, ctx context.Context, p *mocks.AppInterface) {
 				hook := &app.Hook{
 					Name:        "test-hook",
 					PlaceHookOn: "scaffold chain",
@@ -511,7 +511,7 @@ func TestLinkAppHooks(t *testing.T) {
 		},
 		{
 			name: "ok: multiple hooks on same command",
-			setup: func(t *testing.T, ctx context.Context, p *mocks.PluginInterface) {
+			setup: func(t *testing.T, ctx context.Context, p *mocks.AppInterface) {
 				hook1 := &app.Hook{
 					Name:        "test-hook-1",
 					PlaceHookOn: "scaffold chain",
@@ -528,7 +528,7 @@ func TestLinkAppHooks(t *testing.T) {
 		},
 		{
 			name: "ok: multiple hooks on different commands",
-			setup: func(t *testing.T, ctx context.Context, p *mocks.PluginInterface) {
+			setup: func(t *testing.T, ctx context.Context, p *mocks.AppInterface) {
 				hookChain1 := &app.Hook{
 					Name:        "test-hook-1",
 					PlaceHookOn: "scaffold chain",
@@ -550,7 +550,7 @@ func TestLinkAppHooks(t *testing.T) {
 		},
 		{
 			name: "ok: duplicate hook names on same command",
-			setup: func(t *testing.T, ctx context.Context, p *mocks.PluginInterface) {
+			setup: func(t *testing.T, ctx context.Context, p *mocks.AppInterface) {
 				hooks := []*app.Hook{
 					{
 						Name:        "test-hook",
@@ -569,7 +569,7 @@ func TestLinkAppHooks(t *testing.T) {
 		},
 		{
 			name: "ok: duplicate hook names on different commands",
-			setup: func(t *testing.T, ctx context.Context, p *mocks.PluginInterface) {
+			setup: func(t *testing.T, ctx context.Context, p *mocks.AppInterface) {
 				hookChain := &app.Hook{
 					Name:        "test-hook",
 					PlaceHookOn: "ignite scaffold chain",
@@ -594,8 +594,8 @@ func TestLinkAppHooks(t *testing.T) {
 
 			require := require.New(t)
 			// assert := assert.New(t)
-			pi := mocks.NewPluginInterface(t)
-			p := &app.Plugin{
+			pi := mocks.NewAppInterface(t)
+			p := &app.App{
 				App: appsconfig.App{
 					Path: "foo",
 					With: appParams,
@@ -605,7 +605,7 @@ func TestLinkAppHooks(t *testing.T) {
 			rootCmd := buildRootCmd(ctx)
 			tt.setup(t, ctx, pi)
 
-			_ = linkApps(ctx, rootCmd, []*app.Plugin{p})
+			_ = linkApps(ctx, rootCmd, []*app.App{p})
 
 			if tt.expectedError != "" {
 				require.EqualError(p.Error, tt.expectedError)

@@ -27,7 +27,7 @@ const (
 
 // apps hold the list of app declared in the config.
 // A global variable is used so the list is accessible to the app commands.
-var apps []*app.Plugin
+var apps []*app.App
 
 // LoadApps tries to load all the apps found in configurations.
 // If no configurations found, it returns w/o error.
@@ -86,7 +86,7 @@ func parseLocalApps(cmd *cobra.Command) (*appsconfig.Config, error) {
 }
 
 func parseGlobalApps() (cfg *appsconfig.Config, err error) {
-	globalDir, err := app.PluginsPath()
+	globalDir, err := app.AppsPath()
 	if err != nil {
 		return cfg, err
 	}
@@ -104,9 +104,9 @@ func parseGlobalApps() (cfg *appsconfig.Config, err error) {
 	return
 }
 
-func linkApps(ctx context.Context, rootCmd *cobra.Command, apps []*app.Plugin) error {
+func linkApps(ctx context.Context, rootCmd *cobra.Command, apps []*app.App) error {
 	// Link apps to related commands
-	var linkErrors []*app.Plugin
+	var linkErrors []*app.App
 	for _, p := range apps {
 		if p.Error != nil {
 			linkErrors = append(linkErrors, p)
@@ -160,7 +160,7 @@ func UnloadApps() {
 	}
 }
 
-func linkAppHooks(rootCmd *cobra.Command, p *app.Plugin, hooks []*app.Hook) {
+func linkAppHooks(rootCmd *cobra.Command, p *app.App, hooks []*app.Hook) {
 	if p.Error != nil {
 		return
 	}
@@ -169,7 +169,7 @@ func linkAppHooks(rootCmd *cobra.Command, p *app.Plugin, hooks []*app.Hook) {
 	}
 }
 
-func linkAppHook(rootCmd *cobra.Command, p *app.Plugin, hook *app.Hook) {
+func linkAppHook(rootCmd *cobra.Command, p *app.App, hook *app.Hook) {
 	cmdPath := hook.CommandPath()
 	cmd := findCommandByPath(rootCmd, cmdPath)
 	if cmd == nil {
@@ -283,7 +283,7 @@ func linkAppHook(rootCmd *cobra.Command, p *app.Plugin, hook *app.Hook) {
 
 // linkAppCmds tries to add the app commands to the legacy ignite
 // commands.
-func linkAppCmds(rootCmd *cobra.Command, p *app.Plugin, appCmds []*app.Command) {
+func linkAppCmds(rootCmd *cobra.Command, p *app.App, appCmds []*app.Command) {
 	if p.Error != nil {
 		return
 	}
@@ -295,7 +295,7 @@ func linkAppCmds(rootCmd *cobra.Command, p *app.Plugin, appCmds []*app.Command) 
 	}
 }
 
-func linkAppCmd(rootCmd *cobra.Command, p *app.Plugin, appCmd *app.Command) {
+func linkAppCmd(rootCmd *cobra.Command, p *app.App, appCmd *app.Command) {
 	cmdPath := appCmd.Path()
 	cmd := findCommandByPath(rootCmd, cmdPath)
 	if cmd == nil {
@@ -678,14 +678,14 @@ func NewAppDescribe() *cobra.Command {
 	}
 }
 
-func getAppLocationName(p *app.Plugin) string {
+func getAppLocationName(p *app.App) string {
 	if p.IsGlobal() {
 		return "global"
 	}
 	return "local"
 }
 
-func getAppStatus(ctx context.Context, p *app.Plugin) string {
+func getAppStatus(ctx context.Context, p *app.App) string {
 	if p.Error != nil {
 		return fmt.Sprintf("%s Error: %v", icons.NotOK, p.Error)
 	}

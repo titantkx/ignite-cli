@@ -8,9 +8,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	pluginsconfig "github.com/ignite/cli/v28/ignite/config/plugins"
+	appsconfig "github.com/ignite/cli/v28/ignite/config/apps"
 	"github.com/ignite/cli/v28/ignite/pkg/cmdrunner/step"
-	"github.com/ignite/cli/v28/ignite/services/plugin"
+	"github.com/ignite/cli/v28/ignite/services/app"
 	envtest "github.com/ignite/cli/v28/integration"
 )
 
@@ -23,22 +23,22 @@ func Test<%= Title %>(t *testing.T) {
 
 	dir, err := os.Getwd()
 	require.NoError(err)
-	pluginPath := filepath.Join(filepath.Dir(filepath.Dir(dir)), "<%= Name %>")
+	appPath := filepath.Join(filepath.Dir(filepath.Dir(dir)), "<%= Name %>")
 
 	env.Must(env.Exec("install <%= Name %> app locally",
 		step.NewSteps(step.New(
-			step.Exec(envtest.IgniteApp, "app", "install", pluginPath),
+			step.Exec(envtest.IgniteApp, "app", "install", appPath),
 			step.Workdir(app.SourcePath()),
 		)),
 	))
 
-	// One local plugin expected
-	assertLocalPlugins(t, app, []pluginsconfig.Plugin{
+	// One local app expected
+	assertLocalApps(t, app, []appsconfig.App{
 		{
-			Path: pluginPath,
+			Path: appPath,
 		},
 	})
-	assertGlobalPlugins(t, app, nil)
+	assertGlobalApps(t, app, nil)
 
 	buf := &bytes.Buffer{}
 	env.Must(env.Exec("run <%= Name %>",
@@ -55,16 +55,16 @@ func Test<%= Title %>(t *testing.T) {
 	require.Equal("Hello, world!\n", buf.String())
 }
 
-func assertLocalPlugins(t *testing.T, app envtest.App, expectedPlugins []pluginsconfig.Plugin) {
-	cfg, err := pluginsconfig.ParseDir(app.SourcePath())
+func assertLocalApps(t *testing.T, app envtest.App, expectedApps []appsconfig.App) {
+	cfg, err := appsconfig.ParseDir(app.SourcePath())
 	require.NoError(t, err)
-	require.ElementsMatch(t, expectedPlugins, cfg.Apps, "unexpected local apps")
+	require.ElementsMatch(t, expectedApps, cfg.Apps, "unexpected local apps")
 }
 
-func assertGlobalPlugins(t *testing.T, app envtest.App, expectedPlugins []pluginsconfig.Plugin) {
-	cfgPath, err := plugin.PluginsPath()
+func assertGlobalApps(t *testing.T, app envtest.App, expectedApps []appsconfig.App) {
+	cfgPath, err := app.AppsPath()
 	require.NoError(t, err)
-	cfg, err := pluginsconfig.ParseDir(cfgPath)
+	cfg, err := appsconfig.ParseDir(cfgPath)
 	require.NoError(t, err)
-	require.ElementsMatch(t, expectedPlugins, cfg.Apps, "unexpected global apps")
+	require.ElementsMatch(t, expectedApps, cfg.Apps, "unexpected global apps")
 }

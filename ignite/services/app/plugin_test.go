@@ -22,45 +22,45 @@ import (
 	"github.com/ignite/cli/v28/ignite/pkg/gomodule"
 )
 
-func TestNewPlugin(t *testing.T) {
+func TestNewApp(t *testing.T) {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 
 	tests := []struct {
-		name           string
-		pluginCfg      appsconfig.App
-		expectedPlugin Plugin
+		name        string
+		appCfg      appsconfig.App
+		expectedApp App
 	}{
 		{
 			name: "fail: empty path",
-			expectedPlugin: Plugin{
+			expectedApp: App{
 				Error:  errors.Errorf(`missing app property "path"`),
 				stdout: os.Stdout,
 				stderr: os.Stderr,
 			},
 		},
 		{
-			name:      "fail: local plugin doesnt exists",
-			pluginCfg: appsconfig.App{Path: "/xxx/yyy/app"},
-			expectedPlugin: Plugin{
+			name:   "fail: local app doesnt exists",
+			appCfg: appsconfig.App{Path: "/xxx/yyy/app"},
+			expectedApp: App{
 				Error:  errors.Errorf(`local app path "/xxx/yyy/app" not found`),
 				stdout: os.Stdout,
 				stderr: os.Stderr,
 			},
 		},
 		{
-			name:      "fail: local plugin is not a directory",
-			pluginCfg: appsconfig.App{Path: path.Join(wd, "testdata/fakebin")},
-			expectedPlugin: Plugin{
+			name:   "fail: local app is not a directory",
+			appCfg: appsconfig.App{Path: path.Join(wd, "testdata/fakebin")},
+			expectedApp: App{
 				Error:  errors.Errorf(fmt.Sprintf("local app path %q is not a directory", path.Join(wd, "testdata/fakebin"))),
 				stdout: os.Stdout,
 				stderr: os.Stderr,
 			},
 		},
 		{
-			name:      "ok: local plugin",
-			pluginCfg: appsconfig.App{Path: path.Join(wd, "testdata")},
-			expectedPlugin: Plugin{
+			name:   "ok: local app",
+			appCfg: appsconfig.App{Path: path.Join(wd, "testdata")},
+			expectedApp: App{
 				srcPath: path.Join(wd, "testdata"),
 				name:    "testdata",
 				stdout:  os.Stdout,
@@ -68,27 +68,27 @@ func TestNewPlugin(t *testing.T) {
 			},
 		},
 		{
-			name:      "fail: remote plugin with only domain",
-			pluginCfg: appsconfig.App{Path: "github.com"},
-			expectedPlugin: Plugin{
+			name:   "fail: remote app with only domain",
+			appCfg: appsconfig.App{Path: "github.com"},
+			expectedApp: App{
 				Error:  errors.Errorf(`app path "github.com" is not a valid repository URL`),
 				stdout: os.Stdout,
 				stderr: os.Stderr,
 			},
 		},
 		{
-			name:      "fail: remote plugin with incomplete URL",
-			pluginCfg: appsconfig.App{Path: "github.com/ignite"},
-			expectedPlugin: Plugin{
+			name:   "fail: remote app with incomplete URL",
+			appCfg: appsconfig.App{Path: "github.com/ignite"},
+			expectedApp: App{
 				Error:  errors.Errorf(`app path "github.com/ignite" is not a valid repository URL`),
 				stdout: os.Stdout,
 				stderr: os.Stderr,
 			},
 		},
 		{
-			name:      "ok: remote app",
-			pluginCfg: appsconfig.App{Path: "github.com/ignite/app"},
-			expectedPlugin: Plugin{
+			name:   "ok: remote app",
+			appCfg: appsconfig.App{Path: "github.com/ignite/app"},
+			expectedApp: App{
 				repoPath:  "github.com/ignite/app",
 				cloneURL:  "https://github.com/ignite/app",
 				cloneDir:  ".ignite/apps/github.com/ignite/app",
@@ -100,9 +100,9 @@ func TestNewPlugin(t *testing.T) {
 			},
 		},
 		{
-			name:      "ok: remote plugin with @ref",
-			pluginCfg: appsconfig.App{Path: "github.com/ignite/app@develop"},
-			expectedPlugin: Plugin{
+			name:   "ok: remote app with @ref",
+			appCfg: appsconfig.App{Path: "github.com/ignite/app@develop"},
+			expectedApp: App{
 				repoPath:  "github.com/ignite/app@develop",
 				cloneURL:  "https://github.com/ignite/app",
 				cloneDir:  ".ignite/apps/github.com/ignite/app-develop",
@@ -114,9 +114,9 @@ func TestNewPlugin(t *testing.T) {
 			},
 		},
 		{
-			name:      "ok: remote plugin with @ref containing slash",
-			pluginCfg: appsconfig.App{Path: "github.com/ignite/app@package/v1.0.0"},
-			expectedPlugin: Plugin{
+			name:   "ok: remote app with @ref containing slash",
+			appCfg: appsconfig.App{Path: "github.com/ignite/app@package/v1.0.0"},
+			expectedApp: App{
 				repoPath:  "github.com/ignite/app@package/v1.0.0",
 				cloneURL:  "https://github.com/ignite/app",
 				cloneDir:  ".ignite/apps/github.com/ignite/app-package-v1.0.0",
@@ -128,43 +128,43 @@ func TestNewPlugin(t *testing.T) {
 			},
 		},
 		{
-			name:      "ok: remote plugin with subpath",
-			pluginCfg: appsconfig.App{Path: "github.com/ignite/app/plugin1"},
-			expectedPlugin: Plugin{
+			name:   "ok: remote app with subpath",
+			appCfg: appsconfig.App{Path: "github.com/ignite/app/app1"},
+			expectedApp: App{
 				repoPath:  "github.com/ignite/app",
 				cloneURL:  "https://github.com/ignite/app",
 				cloneDir:  ".ignite/apps/github.com/ignite/app",
 				reference: "",
-				srcPath:   ".ignite/apps/github.com/ignite/app/plugin1",
-				name:      "plugin1",
+				srcPath:   ".ignite/apps/github.com/ignite/app/app1",
+				name:      "app1",
 				stdout:    os.Stdout,
 				stderr:    os.Stderr,
 			},
 		},
 		{
-			name:      "ok: remote plugin with subpath and @ref",
-			pluginCfg: appsconfig.App{Path: "github.com/ignite/app/plugin1@develop"},
-			expectedPlugin: Plugin{
+			name:   "ok: remote app with subpath and @ref",
+			appCfg: appsconfig.App{Path: "github.com/ignite/app/app1@develop"},
+			expectedApp: App{
 				repoPath:  "github.com/ignite/app@develop",
 				cloneURL:  "https://github.com/ignite/app",
 				cloneDir:  ".ignite/apps/github.com/ignite/app-develop",
 				reference: "develop",
-				srcPath:   ".ignite/apps/github.com/ignite/app-develop/plugin1",
-				name:      "plugin1",
+				srcPath:   ".ignite/apps/github.com/ignite/app-develop/app1",
+				name:      "app1",
 				stdout:    os.Stdout,
 				stderr:    os.Stderr,
 			},
 		},
 		{
-			name:      "ok: remote plugin with subpath and @ref containing slash",
-			pluginCfg: appsconfig.App{Path: "github.com/ignite/app/plugin1@package/v1.0.0"},
-			expectedPlugin: Plugin{
+			name:   "ok: remote app with subpath and @ref containing slash",
+			appCfg: appsconfig.App{Path: "github.com/ignite/app/app1@package/v1.0.0"},
+			expectedApp: App{
 				repoPath:  "github.com/ignite/app@package/v1.0.0",
 				cloneURL:  "https://github.com/ignite/app",
 				cloneDir:  ".ignite/apps/github.com/ignite/app-package-v1.0.0",
 				reference: "package/v1.0.0",
-				srcPath:   ".ignite/apps/github.com/ignite/app-package-v1.0.0/plugin1",
-				name:      "plugin1",
+				srcPath:   ".ignite/apps/github.com/ignite/app-package-v1.0.0/app1",
+				name:      "app1",
 				stdout:    os.Stdout,
 				stderr:    os.Stderr,
 			},
@@ -172,11 +172,11 @@ func TestNewPlugin(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.expectedPlugin.App = tt.pluginCfg
+			tt.expectedApp.App = tt.appCfg
 
-			p := newPlugin(".ignite/apps", tt.pluginCfg)
+			p := newApp(".ignite/apps", tt.appCfg)
 
-			assertPlugin(t, tt.expectedPlugin, *p)
+			assertApp(t, tt.expectedApp, *p)
 		})
 	}
 }
@@ -188,7 +188,7 @@ func makeGitRepo(t *testing.T, name string) (string, *git.Repository) {
 
 	require := require.New(t)
 	repoDir := t.TempDir()
-	scaffoldPlugin(t, repoDir, "github.com/ignite/"+name, false)
+	scaffoldApp(t, repoDir, "github.com/ignite/"+name, false)
 
 	repo, err := git.PlainInit(repoDir, false)
 	require.NoError(err)
@@ -216,7 +216,7 @@ func (TestClientAPI) GetChainInfo(context.Context) (*ChainInfo, error) {
 	return &ChainInfo{}, nil
 }
 
-func TestPluginLoad(t *testing.T) {
+func TestAppLoad(t *testing.T) {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 
@@ -224,13 +224,13 @@ func TestPluginLoad(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		buildPlugin   func(t *testing.T) Plugin
+		buildApp      func(t *testing.T) App
 		expectedError string
 	}{
 		{
-			name: "fail: plugin is already in error",
-			buildPlugin: func(t *testing.T) Plugin {
-				return Plugin{
+			name: "fail: app is already in error",
+			buildApp: func(t *testing.T) App {
+				return App{
 					Error: errors.New("oups"),
 				}
 			},
@@ -238,8 +238,8 @@ func TestPluginLoad(t *testing.T) {
 		},
 		{
 			name: "fail: no go files in srcPath",
-			buildPlugin: func(t *testing.T) Plugin {
-				return Plugin{
+			buildApp: func(t *testing.T) App {
+				return App{
 					srcPath: path.Join(wd, "testdata"),
 					name:    "testdata",
 				}
@@ -248,9 +248,9 @@ func TestPluginLoad(t *testing.T) {
 		},
 		{
 			name: "ok: from local",
-			buildPlugin: func(t *testing.T) Plugin {
-				path := scaffoldPlugin(t, t.TempDir(), "github.com/foo/bar", false)
-				return Plugin{
+			buildApp: func(t *testing.T) App {
+				path := scaffoldApp(t, t.TempDir(), "github.com/foo/bar", false)
+				return App{
 					srcPath: path,
 					name:    "bar",
 				}
@@ -258,11 +258,11 @@ func TestPluginLoad(t *testing.T) {
 		},
 		{
 			name: "ok: from git repo",
-			buildPlugin: func(t *testing.T) Plugin {
+			buildApp: func(t *testing.T) App {
 				repoDir, _ := makeGitRepo(t, "remote")
 				cloneDir := t.TempDir()
 
-				return Plugin{
+				return App{
 					cloneURL: repoDir,
 					cloneDir: cloneDir,
 					srcPath:  path.Join(cloneDir, "remote"),
@@ -272,10 +272,10 @@ func TestPluginLoad(t *testing.T) {
 		},
 		{
 			name: "fail: git repo doesnt exists",
-			buildPlugin: func(t *testing.T) Plugin {
+			buildApp: func(t *testing.T) App {
 				cloneDir := t.TempDir()
 
-				return Plugin{
+				return App{
 					repoPath: "/xxxx/yyyy",
 					cloneURL: "/xxxx/yyyy",
 					cloneDir: cloneDir,
@@ -286,7 +286,7 @@ func TestPluginLoad(t *testing.T) {
 		},
 		{
 			name: "ok: from git repo with tag",
-			buildPlugin: func(t *testing.T) Plugin {
+			buildApp: func(t *testing.T) App {
 				repoDir, repo := makeGitRepo(t, "remote-tag")
 				h, err := repo.Head()
 				require.NoError(t, err)
@@ -298,7 +298,7 @@ func TestPluginLoad(t *testing.T) {
 
 				cloneDir := t.TempDir()
 
-				return Plugin{
+				return App{
 					cloneURL:  repoDir,
 					reference: "v1",
 					cloneDir:  cloneDir,
@@ -309,7 +309,7 @@ func TestPluginLoad(t *testing.T) {
 		},
 		{
 			name: "ok: from git repo with branch",
-			buildPlugin: func(t *testing.T) Plugin {
+			buildApp: func(t *testing.T) App {
 				repoDir, repo := makeGitRepo(t, "remote-branch")
 				w, err := repo.Worktree()
 				require.NoError(t, err)
@@ -321,7 +321,7 @@ func TestPluginLoad(t *testing.T) {
 
 				cloneDir := t.TempDir()
 
-				return Plugin{
+				return App{
 					cloneURL:  repoDir,
 					reference: "branch1",
 					cloneDir:  cloneDir,
@@ -332,14 +332,14 @@ func TestPluginLoad(t *testing.T) {
 		},
 		{
 			name: "ok: from git repo with hash",
-			buildPlugin: func(t *testing.T) Plugin {
+			buildApp: func(t *testing.T) App {
 				repoDir, repo := makeGitRepo(t, "remote-hash")
 				h, err := repo.Head()
 				require.NoError(t, err)
 
 				cloneDir := t.TempDir()
 
-				return Plugin{
+				return App{
 					cloneURL:  repoDir,
 					reference: h.Hash().String(),
 					cloneDir:  cloneDir,
@@ -350,12 +350,12 @@ func TestPluginLoad(t *testing.T) {
 		},
 		{
 			name: "fail: git ref not found",
-			buildPlugin: func(t *testing.T) Plugin {
+			buildApp: func(t *testing.T) App {
 				repoDir, _ := makeGitRepo(t, "remote-no-ref")
 
 				cloneDir := t.TempDir()
 
-				return Plugin{
+				return App{
 					cloneURL:  repoDir,
 					reference: "doesnt_exists",
 					cloneDir:  cloneDir,
@@ -371,7 +371,7 @@ func TestPluginLoad(t *testing.T) {
 			ctx := context.Background()
 			require := require.New(t)
 			assert := assert.New(t)
-			p := tt.buildPlugin(t)
+			p := tt.buildApp(t)
 			defer p.KillClient()
 
 			p.load(context.Background())
@@ -395,7 +395,7 @@ func TestPluginLoad(t *testing.T) {
 	}
 }
 
-func TestPluginLoadSharedHost(t *testing.T) {
+func TestAppLoadSharedHost(t *testing.T) {
 	tests := []struct {
 		name       string
 		instances  int
@@ -428,83 +428,83 @@ func TestPluginLoadSharedHost(t *testing.T) {
 			var (
 				require = require.New(t)
 				assert  = assert.New(t)
-				// scaffold an unique plugin for all instances
-				path = scaffoldPlugin(t, t.TempDir(),
+				// scaffold an unique app for all instances
+				path = scaffoldApp(t, t.TempDir(),
 					fmt.Sprintf("github.com/foo/bar-%d", i), tt.sharesHost)
-				plugins []*Plugin
+				apps []*App
 			)
-			// Load one plugin per instance
+			// Load one app per instance
 			for i := 0; i < tt.instances; i++ {
-				p := Plugin{
+				p := App{
 					App:     appsconfig.App{Path: path},
 					srcPath: path,
 					name:    filepath.Base(path),
 				}
 				p.load(context.Background())
 				require.NoError(p.Error)
-				plugins = append(plugins, &p)
+				apps = append(apps, &p)
 			}
-			// Ensure all plugins are killed at the end of test case
+			// Ensure all apps are killed at the end of test case
 			defer func() {
-				for i := len(plugins) - 1; i >= 0; i-- {
-					plugins[i].KillClient()
+				for i := len(apps) - 1; i >= 0; i-- {
+					apps[i].KillClient()
 					if tt.sharesHost && i > 0 {
-						assert.False(plugins[i].client.Exited(), "non host app can't kill host app")
-						assert.True(checkConfCache(plugins[i].Path), "non host app doesn't remove config cache when killed")
+						assert.False(apps[i].client.Exited(), "non host app can't kill host app")
+						assert.True(checkConfCache(apps[i].Path), "non host app doesn't remove config cache when killed")
 					} else {
-						assert.True(plugins[i].client.Exited(), "app should be killed")
+						assert.True(apps[i].client.Exited(), "app should be killed")
 					}
-					assert.False(plugins[i].isHost, "killed plugins are no longer host")
+					assert.False(apps[i].isHost, "killed apps are no longer host")
 				}
-				assert.False(checkConfCache(plugins[0].Path), "once host is killed the cache should be cleared")
+				assert.False(checkConfCache(apps[0].Path), "once host is killed the cache should be cleared")
 			}()
 
 			var hostConf *hplugin.ReattachConfig
-			for i := 0; i < len(plugins); i++ {
+			for i := 0; i < len(apps); i++ {
 				if tt.sharesHost {
-					assert.True(checkConfCache(plugins[i].Path), "sharedHost must have a cache entry")
+					assert.True(checkConfCache(apps[i].Path), "sharedHost must have a cache entry")
 					if i == 0 {
-						// first plugin is the host
-						assert.True(plugins[i].isHost, "first app is the host")
+						// first app is the host
+						assert.True(apps[i].isHost, "first app is the host")
 						// Assert reattach config has been saved
-						hostConf = plugins[i].client.ReattachConfig()
-						ref, err := readConfigCache(plugins[i].Path)
+						hostConf = apps[i].client.ReattachConfig()
+						ref, err := readConfigCache(apps[i].Path)
 						if assert.NoError(err) {
 							assert.Equal(hostConf, &ref, "wrong cache entry for app host")
 						}
 					} else {
-						// plugins after first aren't host
-						assert.False(plugins[i].isHost, "app %d can't be host", i)
-						assert.Equal(hostConf, plugins[i].client.ReattachConfig(), "ReattachConfig different from host app")
+						// apps after first aren't host
+						assert.False(apps[i].isHost, "app %d can't be host", i)
+						assert.Equal(hostConf, apps[i].client.ReattachConfig(), "ReattachConfig different from host app")
 					}
 				} else {
-					assert.False(plugins[i].isHost, "app %d can't be host if sharedHost is disabled", i)
-					assert.False(checkConfCache(plugins[i].Path), "app %d can't have a cache entry if sharedHost is disabled", i)
+					assert.False(apps[i].isHost, "app %d can't be host if sharedHost is disabled", i)
+					assert.False(checkConfCache(apps[i].Path), "app %d can't have a cache entry if sharedHost is disabled", i)
 				}
 			}
 		})
 	}
 }
 
-func TestPluginClean(t *testing.T) {
+func TestAppClean(t *testing.T) {
 	tests := []struct {
 		name         string
-		plugin       *Plugin
+		app          *App
 		expectRemove bool
 	}{
 		{
 			name: "dont clean local app",
-			plugin: &Plugin{
+			app: &App{
 				App: appsconfig.App{Path: "/local"},
 			},
 		},
 		{
-			name:   "dont clean plugin with errors",
-			plugin: &Plugin{Error: errors.New("oups")},
+			name: "dont clean app with errors",
+			app:  &App{Error: errors.New("oups")},
 		},
 		{
 			name: "ok",
-			plugin: &Plugin{
+			app: &App{
 				cloneURL: "https://github.com/ignite/app",
 			},
 			expectRemove: true,
@@ -514,9 +514,9 @@ func TestPluginClean(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tmp, err := os.MkdirTemp("", "cloneDir")
 			require.NoError(t, err)
-			tt.plugin.cloneDir = tmp
+			tt.app.cloneDir = tmp
 
-			err = tt.plugin.clean()
+			err = tt.app.clean()
 
 			require.NoError(t, err)
 			if tt.expectRemove {
@@ -527,17 +527,17 @@ func TestPluginClean(t *testing.T) {
 	}
 }
 
-// scaffoldPlugin runs Scaffold and updates the go.mod so it uses the
+// scaffoldApp runs Scaffold and updates the go.mod so it uses the
 // current ignite/cli sources.
-func scaffoldPlugin(t *testing.T, dir, name string, sharedHost bool) string {
+func scaffoldApp(t *testing.T, dir, name string, sharedHost bool) string {
 	t.Helper()
 
 	require := require.New(t)
 	path, err := Scaffold(context.Background(), dir, name, sharedHost)
 	require.NoError(err)
 
-	// We want the scaffolded plugin to use the current version of ignite/cli,
-	// for that we need to update the plugin go.mod and add a replace to target
+	// We want the scaffolded app to use the current version of ignite/cli,
+	// for that we need to update the app go.mod and add a replace to target
 	// current ignite/cli
 	gomod, err := gomodule.ParseAt(path)
 	require.NoError(err)
@@ -556,7 +556,7 @@ func scaffoldPlugin(t *testing.T, dir, name string, sharedHost bool) string {
 	return path
 }
 
-func assertPlugin(t *testing.T, want, have Plugin) {
+func assertApp(t *testing.T, want, have App) {
 	t.Helper()
 
 	if want.Error != nil {

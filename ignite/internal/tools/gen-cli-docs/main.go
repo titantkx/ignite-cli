@@ -50,7 +50,7 @@ func run(outPath string) error {
 	}
 	defer os.RemoveAll(dir)
 	env.SetConfigDir(dir)
-	pluginDir, err := app.PluginsPath()
+	pluginDir, err := app.AppsPath()
 	if err != nil {
 		return err
 	}

@@ -25,7 +25,7 @@ func TestAddRemovePlugin(t *testing.T) {
 			require.NoError(err)
 			assert.ElementsMatch(expectedLocalPlugins, localCfg.Apps, "unexpected local plugins")
 
-			globalCfgPath, err := app.PluginsPath()
+			globalCfgPath, err := app.AppsPath()
 			require.NoError(err)
 			globalCfg, err := appsconfig.ParseDir(globalCfgPath)
 			require.NoError(err)

@@ -6,7 +6,7 @@ import (
 	"github.com/ignite/cli/v28/ignite/pkg/errors"
 )
 
-// ErrAppChainNotFound indicates that the plugin command is not running inside a blockchain app.
+// ErrAppChainNotFound indicates that the app command is not running inside a blockchain app.
 var ErrAppChainNotFound = errors.New("blockchain app not found")
 
 //go:generate mockery --srcpkg . --name Chainer --structname ChainerInterface --filename chainer.go --with-expecter

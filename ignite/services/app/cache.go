@@ -13,13 +13,13 @@ import (
 )
 
 const (
-	cacheFileName  = "ignite_plugin_cache.db"
-	cacheNamespace = "plugin.rpc.context"
+	cacheFileName  = "ignite_app_cache.db"
+	cacheNamespace = "app.rpc.context"
 )
 
-// Caches configuration for shared plugin hosts.
-// The cached configuration can be used to re-attach to running plugins.
-// These type of plugins must have "shared_host: true" in their manifest.
+// Caches configuration for shared app hosts.
+// The cached configuration can be used to re-attach to running apps.
+// These type of apps must have "shared_host: true" in their manifest.
 var storageCache *cache.Cache[hplugin.ReattachConfig]
 
 func init() {
@@ -27,9 +27,9 @@ func init() {
 	gob.Register(&net.UnixAddr{})
 }
 
-func writeConfigCache(pluginPath string, conf hplugin.ReattachConfig) error {
-	if pluginPath == "" {
-		return errors.Errorf("provided path is invalid: %s", pluginPath)
+func writeConfigCache(appPath string, conf hplugin.ReattachConfig) error {
+	if appPath == "" {
+		return errors.Errorf("provided path is invalid: %s", appPath)
 	}
 	if conf.Addr == nil {
 		return errors.Errorf("app Address info cannot be empty")
@@ -38,45 +38,45 @@ func writeConfigCache(pluginPath string, conf hplugin.ReattachConfig) error {
 	if err != nil {
 		return err
 	}
-	return cache.Put(pluginPath, conf)
+	return cache.Put(appPath, conf)
 }
 
-func readConfigCache(pluginPath string) (hplugin.ReattachConfig, error) {
-	if pluginPath == "" {
-		return hplugin.ReattachConfig{}, errors.Errorf("provided path is invalid: %s", pluginPath)
+func readConfigCache(appPath string) (hplugin.ReattachConfig, error) {
+	if appPath == "" {
+		return hplugin.ReattachConfig{}, errors.Errorf("provided path is invalid: %s", appPath)
 	}
 	cache, err := newCache()
 	if err != nil {
 		return hplugin.ReattachConfig{}, err
 	}
-	return cache.Get(pluginPath)
+	return cache.Get(appPath)
 }
 
-func checkConfCache(pluginPath string) bool {
-	if pluginPath == "" {
+func checkConfCache(appPath string) bool {
+	if appPath == "" {
 		return false
 	}
 	cache, err := newCache()
 	if err != nil {
 		return false
 	}
-	_, err = cache.Get(pluginPath)
+	_, err = cache.Get(appPath)
 	return err == nil
 }
 
-func deleteConfCache(pluginPath string) error {
-	if pluginPath == "" {
-		return errors.Errorf("provided path is invalid: %s", pluginPath)
+func deleteConfCache(appPath string) error {
+	if appPath == "" {
+		return errors.Errorf("provided path is invalid: %s", appPath)
 	}
 	cache, err := newCache()
 	if err != nil {
 		return err
 	}
-	return cache.Delete(pluginPath)
+	return cache.Delete(appPath)
 }
 
 func newCache() (*cache.Cache[hplugin.ReattachConfig], error) {
-	cacheRootDir, err := PluginsPath()
+	cacheRootDir, err := AppsPath()
 	if err != nil {
 		return nil, err
 	}

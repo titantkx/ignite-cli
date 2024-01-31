@@ -1,5 +1,5 @@
-// Package plugin implements ignite plugin management.
-// An ignite plugin is a binary which communicates with the ignite binary
+// Package app implements ignite app management.
+// An ignite app is a binary which communicates with the ignite binary
 // via RPC thanks to the github.com/hashicorp/go-plugin library.
 package app
 
@@ -30,21 +30,21 @@ import (
 	"github.com/ignite/cli/v28/ignite/pkg/xurl"
 )
 
-// PluginsPath holds the plugin cache directory.
-var PluginsPath = xfilepath.Mkdir(xfilepath.Join(
+// AppsPath holds the app cache directory.
+var AppsPath = xfilepath.Mkdir(xfilepath.Join(
 	config.DirPath,
 	xfilepath.Path("apps"),
 ))
 
-// Plugin represents a ignite plugin.
-type Plugin struct {
-	// Embed the plugin configuration.
+// App represents a ignite app.
+type App struct {
+	// Embed the app configuration.
 	appsconfig.App
 
-	// Interface allows to communicate with the plugin via RPC.
+	// Interface allows to communicate with the app via RPC.
 	Interface Interface
 
-	// If any error occurred during the plugin load, it's stored here.
+	// If any error occurred during the app load, it's stored here.
 	Error error
 
 	name      string
@@ -56,11 +56,11 @@ type Plugin struct {
 
 	client *hplugin.Client
 
-	// Holds a cache of the plugin manifest to prevent mant calls over the rpc boundary.
+	// Holds a cache of the app manifest to prevent mant calls over the rpc boundary.
 	manifest *Manifest
 
-	// If a plugin's ShareHost flag is set to true, isHost is used to discern if a
-	// plugin instance is controlling the rpc server.
+	// If a app's ShareHost flag is set to true, isHost is used to discern if a
+	// app instance is controlling the rpc server.
 	isHost       bool
 	isSharedHost bool
 
@@ -70,41 +70,41 @@ type Plugin struct {
 	stderr io.Writer
 }
 
-// Option configures Plugin.
-type Option func(*Plugin)
+// Option configures App.
+type Option func(*App)
 
 // CollectEvents collects events from the chain.
 func CollectEvents(ev events.Bus) Option {
-	return func(p *Plugin) {
+	return func(p *App) {
 		p.ev = ev
 	}
 }
 
 func RedirectStdout(w io.Writer) Option {
-	return func(p *Plugin) {
+	return func(p *App) {
 		p.stdout = w
 		p.stderr = w
 	}
 }
 
-// Load loads the plugins found in the chain config.
+// Load loads the apps found in the chain config.
 //
-// There's 2 kinds of plugins, local or remote.
-// Local plugins have their path starting with a `/`, while remote plugins don't.
-// Local plugins are useful for development purpose.
-// Remote plugins require to be fetched first, in $HOME/.ignite/apps folder,
+// There's 2 kinds of apps, local or remote.
+// Local apps have their path starting with a `/`, while remote apps don't.
+// Local apps are useful for development purpose.
+// Remote apps require to be fetched first, in $HOME/.ignite/apps folder,
 // then they are loaded from there.
 //
-// If an error occurs during a plugin load, it's not returned but rather stored in
-// the `Plugin.Error` field. This prevents the loading of other plugins to be interrupted.
-func Load(ctx context.Context, plugins []appsconfig.App, options ...Option) ([]*Plugin, error) {
-	pluginsDir, err := PluginsPath()
+// If an error occurs during a app load, it's not returned but rather stored in
+// the `App.Error` field. This prevents the loading of other apps to be interrupted.
+func Load(ctx context.Context, apps []appsconfig.App, options ...Option) ([]*App, error) {
+	appsDir, err := AppsPath()
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	var loaded []*Plugin
-	for _, cp := range plugins {
-		p := newPlugin(pluginsDir, cp, options...)
+	var loaded []*App
+	for _, cp := range apps {
+		p := newApp(appsDir, cp, options...)
 		p.load(ctx)
 
 		loaded = append(loaded, p)
@@ -112,9 +112,9 @@ func Load(ctx context.Context, plugins []appsconfig.App, options ...Option) ([]*
 	return loaded, nil
 }
 
-// Update removes the cache directory of plugins and fetch them again.
-func Update(plugins ...*Plugin) error {
-	for _, p := range plugins {
+// Update removes the cache directory of apps and fetch them again.
+func Update(apps ...*App) error {
+	for _, p := range apps {
 		if err := p.clean(); err != nil {
 			return err
 		}
@@ -123,17 +123,17 @@ func Update(plugins ...*Plugin) error {
 	return nil
 }
 
-// newPlugin creates a Plugin from configuration.
-func newPlugin(pluginsDir string, cp appsconfig.App, options ...Option) *Plugin {
+// newApp creates a App from configuration.
+func newApp(appsDir string, cp appsconfig.App, options ...Option) *App {
 	var (
-		p = &Plugin{
+		p = &App{
 			App:    cp,
 			stdout: os.Stdout,
 			stderr: os.Stderr,
 		}
-		pluginPath = cp.Path
+		appPath = cp.Path
 	)
-	if pluginPath == "" {
+	if appPath == "" {
 		p.Error = errors.Errorf(`missing app property "path"`)
 		return p
 	}
@@ -143,30 +143,30 @@ func newPlugin(pluginsDir string, cp appsconfig.App, options ...Option) *Plugin 
 		apply(p)
 	}
 
-	if strings.HasPrefix(pluginPath, "/") {
-		// This is a local plugin, check if the file exists
-		st, err := os.Stat(pluginPath)
+	if strings.HasPrefix(appPath, "/") {
+		// This is a local app, check if the file exists
+		st, err := os.Stat(appPath)
 		if err != nil {
-			p.Error = errors.Wrapf(err, "local app path %q not found", pluginPath)
+			p.Error = errors.Wrapf(err, "local app path %q not found", appPath)
 			return p
 		}
 		if !st.IsDir() {
-			p.Error = errors.Errorf("local app path %q is not a directory", pluginPath)
+			p.Error = errors.Errorf("local app path %q is not a directory", appPath)
 			return p
 		}
-		p.srcPath = pluginPath
-		p.name = path.Base(pluginPath)
+		p.srcPath = appPath
+		p.name = path.Base(appPath)
 		return p
 	}
-	// This is a remote plugin, parse the URL
-	if i := strings.LastIndex(pluginPath, "@"); i != -1 {
+	// This is a remote app, parse the URL
+	if i := strings.LastIndex(appPath, "@"); i != -1 {
 		// path contains a reference
-		p.reference = pluginPath[i+1:]
-		pluginPath = pluginPath[:i]
+		p.reference = appPath[i+1:]
+		appPath = appPath[:i]
 	}
-	parts := strings.Split(pluginPath, "/")
+	parts := strings.Split(appPath, "/")
 	if len(parts) < 3 {
-		p.Error = errors.Errorf("app path %q is not a valid repository URL", pluginPath)
+		p.Error = errors.Errorf("app path %q is not a valid repository URL", appPath)
 		return p
 	}
 	p.repoPath = path.Join(parts[:3]...)
@@ -174,26 +174,26 @@ func newPlugin(pluginsDir string, cp appsconfig.App, options ...Option) *Plugin 
 
 	if len(p.reference) > 0 {
 		ref := strings.ReplaceAll(p.reference, "/", "-")
-		p.cloneDir = path.Join(pluginsDir, fmt.Sprintf("%s-%s", p.repoPath, ref))
+		p.cloneDir = path.Join(appsDir, fmt.Sprintf("%s-%s", p.repoPath, ref))
 		p.repoPath += "@" + p.reference
 	} else {
-		p.cloneDir = path.Join(pluginsDir, p.repoPath)
+		p.cloneDir = path.Join(appsDir, p.repoPath)
 	}
 
-	// Plugin can have a subpath within its repository.
+	// App can have a subpath within its repository.
 	// For example, "github.com/ignite/apps/app1" where "app1" is the subpath.
 	repoSubPath := path.Join(parts[3:]...)
 
 	p.srcPath = path.Join(p.cloneDir, repoSubPath)
-	p.name = path.Base(pluginPath)
+	p.name = path.Base(appPath)
 
 	return p
 }
 
-// KillClient kills the running plugin client.
-func (p *Plugin) KillClient() {
+// KillClient kills the running app client.
+func (p *App) KillClient() {
 	if p.isSharedHost && !p.isHost {
-		// Don't send kill signal to a shared-host plugin when this process isn't
+		// Don't send kill signal to a shared-host app when this process isn't
 		// the one who initiated it.
 		return
 	}
@@ -208,28 +208,28 @@ func (p *Plugin) KillClient() {
 	}
 }
 
-// Manifest returns plugin's manigest.
-// The manifest is available after the plugin has been loaded.
-func (p Plugin) Manifest() *Manifest {
+// Manifest returns app's manigest.
+// The manifest is available after the app has been loaded.
+func (p App) Manifest() *Manifest {
 	return p.manifest
 }
 
-func (p Plugin) binaryName() string {
+func (p App) binaryName() string {
 	return fmt.Sprintf("%s.ign", p.name)
 }
 
-func (p Plugin) binaryPath() string {
+func (p App) binaryPath() string {
 	return path.Join(p.srcPath, p.binaryName())
 }
 
-// load tries to fill p.Interface, ensuring the plugin is usable.
-func (p *Plugin) load(ctx context.Context) {
+// load tries to fill p.Interface, ensuring the app is usable.
+func (p *App) load(ctx context.Context) {
 	if p.Error != nil {
 		return
 	}
 	_, err := os.Stat(p.srcPath)
 	if err != nil {
-		// srcPath found, need to fetch the plugin
+		// srcPath found, need to fetch the app
 		p.fetch()
 		if p.Error != nil {
 			return
@@ -237,7 +237,7 @@ func (p *Plugin) load(ctx context.Context) {
 	}
 
 	if p.IsLocalPath() {
-		// trigger rebuild for local plugin if binary is outdated
+		// trigger rebuild for local app if binary is outdated
 		if p.outdatedBinary() {
 			p.build(ctx)
 		}
@@ -252,8 +252,8 @@ func (p *Plugin) load(ctx context.Context) {
 	if p.Error != nil {
 		return
 	}
-	// pluginMap is the map of plugins we can dispense.
-	pluginMap := map[string]hplugin.Plugin{
+	// appMap is the map of apps we can dispense.
+	appMap := map[string]hplugin.Plugin{
 		p.name: NewGRPC(nil),
 	}
 	// Create an hclog.Logger
@@ -267,10 +267,10 @@ func (p *Plugin) load(ctx context.Context) {
 		Level:  logLevel,
 	})
 
-	// Common plugin client configuration values
+	// Common app client configuration values
 	cfg := &hplugin.ClientConfig{
 		HandshakeConfig:  HandshakeConfig(),
-		Plugins:          pluginMap,
+		Plugins:          appMap,
 		Logger:           logger,
 		SyncStderr:       p.stdout,
 		SyncStdout:       p.stderr,
@@ -284,11 +284,11 @@ func (p *Plugin) load(ctx context.Context) {
 			return
 		}
 
-		// Attach to an existing plugin process
+		// Attach to an existing app process
 		cfg.Reattach = &rconf
 		p.client = hplugin.NewClient(cfg)
 	} else {
-		// Launch a new plugin process
+		// Launch a new app process
 		cfg.Cmd = exec.Command(p.binaryPath())
 		p.client = hplugin.NewClient(cfg)
 	}
@@ -300,7 +300,7 @@ func (p *Plugin) load(ctx context.Context) {
 		return
 	}
 
-	// Request the plugin
+	// Request the app
 	raw, err := rpcClient.Dispense(p.name)
 	if err != nil {
 		p.Error = errors.Wrapf(err, "dispensing")
@@ -319,10 +319,10 @@ func (p *Plugin) load(ctx context.Context) {
 
 	p.isSharedHost = m.SharedHost
 
-	// Cache the manifest to avoid extra plugin requests
+	// Cache the manifest to avoid extra app requests
 	p.manifest = m
 
-	// write the rpc context to cache if the plugin is declared as host.
+	// write the rpc context to cache if the app is declared as host.
 	// writing it to cache as lost operation within load to assure rpc client's reattach config
 	// is hydrated.
 	if m.SharedHost && !checkConfCache(p.Path) {
@@ -332,13 +332,13 @@ func (p *Plugin) load(ctx context.Context) {
 			return
 		}
 
-		// set the plugin's rpc server as host so other plugin clients may share
+		// set the app's rpc server as host so other app clients may share
 		p.isHost = true
 	}
 }
 
-// fetch clones the plugin repository at the expected reference.
-func (p *Plugin) fetch() {
+// fetch clones the app repository at the expected reference.
+func (p *App) fetch() {
 	if p.IsLocalPath() {
 		return
 	}
@@ -355,8 +355,8 @@ func (p *Plugin) fetch() {
 	}
 }
 
-// build compiles the plugin binary.
-func (p *Plugin) build(ctx context.Context) {
+// build compiles the app binary.
+func (p *App) build(ctx context.Context) {
 	if p.Error != nil {
 		return
 	}
@@ -373,26 +373,26 @@ func (p *Plugin) build(ctx context.Context) {
 	}
 }
 
-// clean removes the plugin cache (only for remote plugins).
-func (p *Plugin) clean() error {
+// clean removes the app cache (only for remote apps).
+func (p *App) clean() error {
 	if p.Error != nil {
-		// Dont try to clean plugins with error
+		// Dont try to clean apps with error
 		return nil
 	}
 	if p.IsLocalPath() {
-		// Not a remote plugin, nothing to clean
+		// Not a remote app, nothing to clean
 		return nil
 	}
 	// Clean the cloneDir, next time the ignite command will be invoked, the
-	// plugin will be fetched again.
+	// app will be fetched again.
 	err := os.RemoveAll(p.cloneDir)
 	return errors.WithStack(err)
 }
 
-// outdatedBinary returns true if the plugin binary is older than the other
+// outdatedBinary returns true if the app binary is older than the other
 // files in p.srcPath.
-// Also returns true if the plugin binary is absent.
-func (p *Plugin) outdatedBinary() bool {
+// Also returns true if the app binary is absent.
+func (p *App) outdatedBinary() bool {
 	var (
 		binaryTime time.Time
 		mostRecent time.Time

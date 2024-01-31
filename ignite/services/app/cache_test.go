@@ -9,9 +9,9 @@ import (
 )
 
 func TestReadWriteConfigCache(t *testing.T) {
-	t.Run("Should cache plugin config and read from cache", func(t *testing.T) {
-		const path = "/path/to/awesome/plugin"
-		unixFD, _ := net.ResolveUnixAddr("unix", "/var/folders/5k/sv4bxrs102n_6rr7430jc7j80000gn/T/plugin193424090")
+	t.Run("Should cache app config and read from cache", func(t *testing.T) {
+		const path = "/path/to/awesome/app"
+		unixFD, _ := net.ResolveUnixAddr("unix", "/var/folders/5k/sv4bxrs102n_6rr7430jc7j80000gn/T/app193424090")
 
 		rc := hplugin.ReattachConfig{
 			Protocol:        hplugin.ProtocolGRPC,
@@ -28,8 +28,8 @@ func TestReadWriteConfigCache(t *testing.T) {
 		require.Equal(t, rc, c)
 	})
 
-	t.Run("Should error writing bad plugin config to cache", func(t *testing.T) {
-		const path = "/path/to/awesome/plugin"
+	t.Run("Should error writing bad app config to cache", func(t *testing.T) {
+		const path = "/path/to/awesome/app"
 		rc := hplugin.ReattachConfig{
 			Protocol:        hplugin.ProtocolGRPC,
 			ProtocolVersion: hplugin.CoreProtocolVersion,
@@ -41,7 +41,7 @@ func TestReadWriteConfigCache(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("Should error with invalid plugin path", func(t *testing.T) {
+	t.Run("Should error with invalid app path", func(t *testing.T) {
 		const path = ""
 		rc := hplugin.ReattachConfig{
 			Protocol:        hplugin.ProtocolGRPC,
@@ -56,9 +56,9 @@ func TestReadWriteConfigCache(t *testing.T) {
 }
 
 func TestDeleteConfCache(t *testing.T) {
-	t.Run("Delete plugin config after write to cache should remove from cache", func(t *testing.T) {
-		const path = "/path/to/awesome/plugin"
-		unixFD, _ := net.ResolveUnixAddr("unix", "/var/folders/5k/sv4bxrs102n_6rr7430jc7j80000gn/T/plugin193424090")
+	t.Run("Delete app config after write to cache should remove from cache", func(t *testing.T) {
+		const path = "/path/to/awesome/app"
+		unixFD, _ := net.ResolveUnixAddr("unix", "/var/folders/5k/sv4bxrs102n_6rr7430jc7j80000gn/T/app193424090")
 
 		rc := hplugin.ReattachConfig{
 			Protocol:        hplugin.ProtocolGRPC,
@@ -78,7 +78,7 @@ func TestDeleteConfCache(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("Delete plugin config should return error given empty path", func(t *testing.T) {
+	t.Run("Delete app config should return error given empty path", func(t *testing.T) {
 		const path = ""
 		err := deleteConfCache(path)
 		require.Error(t, err)
@@ -86,8 +86,8 @@ func TestDeleteConfCache(t *testing.T) {
 }
 
 func TestCheckConfCache(t *testing.T) {
-	const path = "/path/to/awesome/plugin"
-	unixFD, _ := net.ResolveUnixAddr("unix", "/var/folders/5k/sv4bxrs102n_6rr7430jc7j80000gn/T/plugin193424090")
+	const path = "/path/to/awesome/app"
+	unixFD, _ := net.ResolveUnixAddr("unix", "/var/folders/5k/sv4bxrs102n_6rr7430jc7j80000gn/T/app193424090")
 
 	rc := hplugin.ReattachConfig{
 		Protocol:        hplugin.ProtocolGRPC,

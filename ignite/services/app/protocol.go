@@ -15,27 +15,27 @@ var handshakeConfig = hplugin.HandshakeConfig{
 	MagicCookieValue: "ignite",
 }
 
-// HandshakeConfig are used to just do a basic handshake between a plugin and host.
+// HandshakeConfig are used to just do a basic handshake between a app and host.
 // If the handshake fails, a user friendly error is shown. This prevents users from
-// executing bad plugins or executing a plugin directory. It is a UX feature, not a
+// executing bad apps or executing a app directory. It is a UX feature, not a
 // security feature.
 func HandshakeConfig() hplugin.HandshakeConfig {
 	return handshakeConfig
 }
 
-// NewGRPC returns a new gRPC plugin that implements the interface over gRPC.
+// NewGRPC returns a new gRPC app that implements the interface over gRPC.
 func NewGRPC(impl Interface) hplugin.Plugin {
-	return grpcPlugin{impl: impl}
+	return grpcApp{impl: impl}
 }
 
-type grpcPlugin struct {
+type grpcApp struct {
 	hplugin.NetRPCUnsupportedPlugin
 
 	impl Interface
 }
 
-// GRPCServer returns a new server that implements the plugin interface over gRPC.
-func (p grpcPlugin) GRPCServer(broker *hplugin.GRPCBroker, s *grpc.Server) error {
+// GRPCServer returns a new server that implements the app interface over gRPC.
+func (p grpcApp) GRPCServer(broker *hplugin.GRPCBroker, s *grpc.Server) error {
 	v1.RegisterInterfaceServiceServer(s, &server{
 		impl:   p.impl,
 		broker: broker,
@@ -43,8 +43,8 @@ func (p grpcPlugin) GRPCServer(broker *hplugin.GRPCBroker, s *grpc.Server) error
 	return nil
 }
 
-// GRPCClient returns a new plugin client that allows calling the plugin interface over gRPC.
-func (p grpcPlugin) GRPCClient(_ context.Context, broker *hplugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
+// GRPCClient returns a new app client that allows calling the app interface over gRPC.
+func (p grpcApp) GRPCClient(_ context.Context, broker *hplugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
 	return &client{
 		grpc:   v1.NewInterfaceServiceClient(c),
 		broker: broker,

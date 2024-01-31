@@ -6,21 +6,21 @@ import (
 
 	hplugin "github.com/hashicorp/go-plugin"
 
-	"github.com/ignite/cli/v28/ignite/services/plugin"
+	"github.com/ignite/cli/v28/ignite/services/app"
 	"<%= ModuleName %>/cmd"
 )
 
 type app struct{}
 
-func (app) Manifest(_ context.Context) (*plugin.Manifest, error) {
-	return &plugin.Manifest{
+func (app) Manifest(_ context.Context) (*app.Manifest, error) {
+	return &app.Manifest{
 		Name: "<%= Name %>",<%= if (SharedHost) { %>
 		SharedHost: true,<% } %>
 		Commands: cmd.GetCommands(),
 	}, nil
 }
 
-func (app) Execute(ctx context.Context, c *plugin.ExecutedCommand, _ plugin.ClientAPI) error {
+func (app) Execute(ctx context.Context, c *app.ExecutedCommand, _ app.ClientAPI) error {
 	// Remove the first two elements "ignite" and "<%= Name %>" from OsArgs.
 	args := c.OsArgs[2:]
 	
@@ -32,23 +32,23 @@ func (app) Execute(ctx context.Context, c *plugin.ExecutedCommand, _ plugin.Clie
 	}
 }
 
-func (app) ExecuteHookPre(_ context.Context, _ *plugin.ExecutedHook, _ plugin.ClientAPI) error {
+func (app) ExecuteHookPre(_ context.Context, _ *app.ExecutedHook, _ app.ClientAPI) error {
 	return nil
 }
 
-func (app) ExecuteHookPost(_ context.Context, _ *plugin.ExecutedHook, _ plugin.ClientAPI) error {
+func (app) ExecuteHookPost(_ context.Context, _ *app.ExecutedHook, _ app.ClientAPI) error {
 	return nil
 }
 
-func (app) ExecuteHookCleanUp(_ context.Context, _ *plugin.ExecutedHook, _ plugin.ClientAPI) error {
+func (app) ExecuteHookCleanUp(_ context.Context, _ *app.ExecutedHook, _ app.ClientAPI) error {
 	return nil
 }
 
 func main() {
 	hplugin.Serve(&hplugin.ServeConfig{
-		HandshakeConfig: plugin.HandshakeConfig(),
+		HandshakeConfig: app.HandshakeConfig(),
 		Plugins: map[string]hplugin.Plugin{
-			"<%= Name %>": plugin.NewGRPC(&app{}),
+			"<%= Name %>": app.NewGRPC(&app{}),
 		},
 		GRPCServer: hplugin.DefaultGRPCServer,
 	})

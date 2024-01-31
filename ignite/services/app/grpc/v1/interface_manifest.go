@@ -2,8 +2,8 @@ package v1
 
 import "github.com/spf13/cobra"
 
-// ImportCobraCommand appends Cobra command definitions to the list of plugin commands.
-// This method can be used in cases where a plugin defines the commands using Cobra.
+// ImportCobraCommand appends Cobra command definitions to the list of app commands.
+// This method can be used in cases where a app defines the commands using Cobra.
 func (m *Manifest) ImportCobraCommand(cmd *cobra.Command, placeCommandUnder string) {
 	m.Commands = append(m.Commands, convertCobraCommand(cmd, placeCommandUnder))
 }

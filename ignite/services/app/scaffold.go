@@ -19,9 +19,9 @@ import (
 )
 
 //go:embed template/*
-var fsPluginSource embed.FS
+var fsAppSource embed.FS
 
-// Scaffold generates a plugin structure under dir/path.Base(moduleName).
+// Scaffold generates a app structure under dir/path.Base(moduleName).
 func Scaffold(ctx context.Context, dir, moduleName string, sharedHost bool) (string, error) {
 	var (
 		name     = filepath.Base(moduleName)
@@ -29,7 +29,7 @@ func Scaffold(ctx context.Context, dir, moduleName string, sharedHost bool) (str
 		finalDir = path.Join(dir, name)
 		g        = genny.New()
 		template = xgenny.NewEmbedWalker(
-			fsPluginSource,
+			fsAppSource,
 			"template",
 			finalDir,
 		)

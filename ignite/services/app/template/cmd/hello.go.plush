@@ -4,11 +4,11 @@ import (
     "context"
 	"fmt"
 
-    "github.com/ignite/cli/v28/ignite/services/plugin"
+    "github.com/ignite/cli/v28/ignite/services/app"
 )
 
 // ExecuteHello executes the hello subcommand.
-func ExecuteHello(ctx context.Context, cmd *plugin.ExecutedCommand) error {
+func ExecuteHello(ctx context.Context, cmd *app.ExecutedCommand) error {
     fmt.Println("Hello, world!")
     return nil
 }
