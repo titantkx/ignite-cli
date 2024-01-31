@@ -9,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/ignite/cli/v28/ignite/services/plugin"
-	"github.com/ignite/cli/v28/ignite/services/plugin/mocks"
+	"github.com/ignite/cli/v28/ignite/services/app"
+	"github.com/ignite/cli/v28/ignite/services/app/mocks"
 )
 
 func TestPluginExecute(t *testing.T) {
@@ -56,7 +56,7 @@ func TestPluginExecute(t *testing.T) {
 				context.Background(),
 				pluginPath,
 				[]string{"arg1", "arg2"},
-				plugin.WithChain(chainer),
+				app.WithChain(chainer),
 			)
 
 			if tt.expectedError != "" {

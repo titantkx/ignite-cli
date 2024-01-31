@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	pluginsconfig "github.com/ignite/cli/v28/ignite/config/plugins"
+	appsconfig "github.com/ignite/cli/v28/ignite/config/apps"
 	"github.com/ignite/cli/v28/ignite/pkg/cmdrunner/step"
-	"github.com/ignite/cli/v28/ignite/services/plugin"
+	"github.com/ignite/cli/v28/ignite/services/app"
 	envtest "github.com/ignite/cli/v28/integration"
 )
 
@@ -18,16 +18,16 @@ func TestAddRemovePlugin(t *testing.T) {
 		require = require.New(t)
 		assert  = assert.New(t)
 		env     = envtest.New(t)
-		app     = env.Scaffold("github.com/test/blog")
+		chain   = env.Scaffold("github.com/test/blog")
 
-		assertPlugins = func(expectedLocalPlugins, expectedGlobalPlugins []pluginsconfig.Plugin) {
-			localCfg, err := pluginsconfig.ParseDir(app.SourcePath())
+		assertPlugins = func(expectedLocalPlugins, expectedGlobalPlugins []appsconfig.App) {
+			localCfg, err := appsconfig.ParseDir(chain.SourcePath())
 			require.NoError(err)
 			assert.ElementsMatch(expectedLocalPlugins, localCfg.Apps, "unexpected local plugins")
 
-			globalCfgPath, err := plugin.PluginsPath()
+			globalCfgPath, err := app.PluginsPath()
 			require.NoError(err)
-			globalCfg, err := pluginsconfig.ParseDir(globalCfgPath)
+			globalCfg, err := appsconfig.ParseDir(globalCfgPath)
 			require.NoError(err)
 			assert.ElementsMatch(expectedGlobalPlugins, globalCfg.Apps, "unexpected global plugins")
 		}
@@ -43,13 +43,13 @@ func TestAddRemovePlugin(t *testing.T) {
 	env.Must(env.Exec("add plugin locally",
 		step.NewSteps(step.New(
 			step.Exec(envtest.IgniteApp, "app", "install", pluginRepo, "k1=v1", "k2=v2"),
-			step.Workdir(app.SourcePath()),
+			step.Workdir(chain.SourcePath()),
 		)),
 	))
 
 	// one local plugin expected
 	assertPlugins(
-		[]pluginsconfig.Plugin{
+		[]appsconfig.App{
 			{
 				Path: pluginRepo,
 				With: map[string]string{
@@ -64,7 +64,7 @@ func TestAddRemovePlugin(t *testing.T) {
 	env.Must(env.Exec("uninstall plugin locally",
 		step.NewSteps(step.New(
 			step.Exec(envtest.IgniteApp, "app", "uninstall", pluginRepo),
-			step.Workdir(app.SourcePath()),
+			step.Workdir(chain.SourcePath()),
 		)),
 	))
 
@@ -74,14 +74,14 @@ func TestAddRemovePlugin(t *testing.T) {
 	env.Must(env.Exec("install plugin globally",
 		step.NewSteps(step.New(
 			step.Exec(envtest.IgniteApp, "app", "install", pluginRepo, "-g"),
-			step.Workdir(app.SourcePath()),
+			step.Workdir(chain.SourcePath()),
 		)),
 	))
 
 	// one global plugins expected
 	assertPlugins(
 		nil,
-		[]pluginsconfig.Plugin{
+		[]appsconfig.App{
 			{
 				Path: pluginRepo,
 			},
@@ -91,7 +91,7 @@ func TestAddRemovePlugin(t *testing.T) {
 	env.Must(env.Exec("uninstall plugin globally",
 		step.NewSteps(step.New(
 			step.Exec(envtest.IgniteApp, "app", "uninstall", pluginRepo, "-g"),
-			step.Workdir(app.SourcePath()),
+			step.Workdir(chain.SourcePath()),
 		)),
 	))
 

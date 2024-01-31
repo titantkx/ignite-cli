@@ -7,18 +7,18 @@ import (
 
 	"google.golang.org/grpc/status"
 
-	pluginsconfig "github.com/ignite/cli/v28/ignite/config/plugins"
+	appsconfig "github.com/ignite/cli/v28/ignite/config/apps"
 	"github.com/ignite/cli/v28/ignite/pkg/errors"
-	"github.com/ignite/cli/v28/ignite/services/plugin"
+	"github.com/ignite/cli/v28/ignite/services/app"
 )
 
 // Execute starts and executes a plugin, then shutdowns it.
-func Execute(ctx context.Context, path string, args []string, options ...plugin.APIOption) (string, error) {
+func Execute(ctx context.Context, path string, args []string, options ...app.APIOption) (string, error) {
 	var buf bytes.Buffer
-	plugins, err := plugin.Load(
+	plugins, err := app.Load(
 		ctx,
-		[]pluginsconfig.Plugin{{Path: path}},
-		plugin.RedirectStdout(&buf),
+		[]appsconfig.App{{Path: path}},
+		app.RedirectStdout(&buf),
 	)
 	if err != nil {
 		return "", err
@@ -29,8 +29,8 @@ func Execute(ctx context.Context, path string, args []string, options ...plugin.
 	}
 	err = plugins[0].Interface.Execute(
 		ctx,
-		&plugin.ExecutedCommand{Args: args},
-		plugin.NewClientAPI(options...),
+		&app.ExecutedCommand{Args: args},
+		app.NewClientAPI(options...),
 	)
 	if err != nil {
 		// Extract the rpc status message and create a simple error from it.

@@ -6,30 +6,30 @@ import (
 
 	hplugin "github.com/hashicorp/go-plugin"
 
-	"github.com/ignite/cli/v28/ignite/services/plugin"
+	"github.com/ignite/cli/v28/ignite/services/app"
 )
 
 type p struct{}
 
-func (p) Manifest(context.Context) (*plugin.Manifest, error) {
-	return &plugin.Manifest{
+func (p) Manifest(context.Context) (*app.Manifest, error) {
+	return &app.Manifest{
 		Name: "example-plugin",
-		Commands: []*plugin.Command{
+		Commands: []*app.Command{
 			{
 				Use:   "example-plugin",
 				Short: "Explain what the command is doing...",
 				Long:  "Long description goes here...",
-				Flags: []*plugin.Flag{
-					{Name: "my-flag", Type: plugin.FlagTypeString, Usage: "my flag description"},
+				Flags: []*app.Flag{
+					{Name: "my-flag", Type: app.FlagTypeString, Usage: "my flag description"},
 				},
 				PlaceCommandUnder: "ignite",
 			},
 		},
-		Hooks: []*plugin.Hook{},
+		Hooks: []*app.Hook{},
 	}, nil
 }
 
-func (p) Execute(ctx context.Context, cmd *plugin.ExecutedCommand, api plugin.ClientAPI) error {
+func (p) Execute(ctx context.Context, cmd *app.ExecutedCommand, api app.ClientAPI) error {
 	fmt.Printf("Hello I'm the example-plugin plugin\n")
 	fmt.Printf("My executed command: %q\n", cmd.Path)
 	fmt.Printf("My args: %v\n", cmd.Args)
@@ -48,26 +48,26 @@ func (p) Execute(ctx context.Context, cmd *plugin.ExecutedCommand, api plugin.Cl
 	return nil
 }
 
-func (p) ExecuteHookPre(_ context.Context, h *plugin.ExecutedHook, _ plugin.ClientAPI) error {
+func (p) ExecuteHookPre(_ context.Context, h *app.ExecutedHook, _ app.ClientAPI) error {
 	fmt.Printf("Executing hook pre %q\n", h.Hook.GetName())
 	return nil
 }
 
-func (p) ExecuteHookPost(_ context.Context, h *plugin.ExecutedHook, _ plugin.ClientAPI) error {
+func (p) ExecuteHookPost(_ context.Context, h *app.ExecutedHook, _ app.ClientAPI) error {
 	fmt.Printf("Executing hook post %q\n", h.Hook.GetName())
 	return nil
 }
 
-func (p) ExecuteHookCleanUp(_ context.Context, h *plugin.ExecutedHook, _ plugin.ClientAPI) error {
+func (p) ExecuteHookCleanUp(_ context.Context, h *app.ExecutedHook, _ app.ClientAPI) error {
 	fmt.Printf("Executing hook cleanup %q\n", h.Hook.GetName())
 	return nil
 }
 
 func main() {
 	hplugin.Serve(&hplugin.ServeConfig{
-		HandshakeConfig: plugin.HandshakeConfig(),
+		HandshakeConfig: app.HandshakeConfig(),
 		Plugins: map[string]hplugin.Plugin{
-			"example-plugin": plugin.NewGRPC(&p{}),
+			"example-plugin": app.NewGRPC(&p{}),
 		},
 		GRPCServer: hplugin.DefaultGRPCServer,
 	})

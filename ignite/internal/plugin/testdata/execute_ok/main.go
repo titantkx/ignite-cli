@@ -5,19 +5,17 @@ import (
 	"fmt"
 
 	hplugin "github.com/hashicorp/go-plugin"
-
-	"github.com/ignite/cli/v28/ignite/services/plugin"
 )
 
 type app struct{}
 
-func (app) Manifest(ctx context.Context) (*plugin.Manifest, error) {
-	return &plugin.Manifest{
+func (app) Manifest(ctx context.Context) (*app.Manifest, error) {
+	return &app.Manifest{
 		Name: "execute_ok",
 	}, nil
 }
 
-func (app) Execute(ctx context.Context, cmd *plugin.ExecutedCommand, api plugin.ClientAPI) error {
+func (app) Execute(ctx context.Context, cmd *app.ExecutedCommand, api app.ClientAPI) error {
 	c, _ := api.GetChainInfo(ctx)
 	fmt.Printf(
 		"ok args=%s chainid=%s appPath=%s configPath=%s home=%s rpcAddress=%s\n",
@@ -26,23 +24,23 @@ func (app) Execute(ctx context.Context, cmd *plugin.ExecutedCommand, api plugin.
 	return nil
 }
 
-func (app) ExecuteHookPre(ctx context.Context, h *plugin.ExecutedHook, api plugin.ClientAPI) error {
+func (app) ExecuteHookPre(ctx context.Context, h *app.ExecutedHook, api app.ClientAPI) error {
 	return nil
 }
 
-func (app) ExecuteHookPost(ctx context.Context, h *plugin.ExecutedHook, api plugin.ClientAPI) error {
+func (app) ExecuteHookPost(ctx context.Context, h *app.ExecutedHook, api app.ClientAPI) error {
 	return nil
 }
 
-func (app) ExecuteHookCleanUp(ctx context.Context, h *plugin.ExecutedHook, api plugin.ClientAPI) error {
+func (app) ExecuteHookCleanUp(ctx context.Context, h *app.ExecutedHook, api app.ClientAPI) error {
 	return nil
 }
 
 func main() {
 	hplugin.Serve(&hplugin.ServeConfig{
-		HandshakeConfig: plugin.HandshakeConfig(),
+		HandshakeConfig: app.HandshakeConfig(),
 		Plugins: map[string]hplugin.Plugin{
-			"execute_ok": plugin.NewGRPC(&app{}),
+			"execute_ok": app.NewGRPC(&app{}),
 		},
 		GRPCServer: hplugin.DefaultGRPCServer,
 	})

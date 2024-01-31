@@ -18,9 +18,9 @@ import (
 	"github.com/spf13/cobra/doc"
 
 	ignitecmd "github.com/ignite/cli/v28/ignite/cmd"
-	pluginsconfig "github.com/ignite/cli/v28/ignite/config/plugins"
+	appsconfig "github.com/ignite/cli/v28/ignite/config/apps"
 	"github.com/ignite/cli/v28/ignite/pkg/env"
-	"github.com/ignite/cli/v28/ignite/services/plugin"
+	"github.com/ignite/cli/v28/ignite/services/app"
 )
 
 const head = `---
@@ -50,17 +50,17 @@ func run(outPath string) error {
 	}
 	defer os.RemoveAll(dir)
 	env.SetConfigDir(dir)
-	pluginDir, err := plugin.PluginsPath()
+	pluginDir, err := app.PluginsPath()
 	if err != nil {
 		return err
 	}
-	cfg, err := pluginsconfig.ParseDir(pluginDir)
+	cfg, err := appsconfig.ParseDir(pluginDir)
 	if err != nil {
 		return err
 	}
-	cfg.Apps = append(cfg.Apps, pluginsconfig.Plugin{
+	cfg.Apps = append(cfg.Apps, appsconfig.App{
 		// Add network plugin
-		Path: ignitecmd.PluginNetworkPath,
+		Path: ignitecmd.AppNetworkPath,
 	})
 	if err := cfg.Save(); err != nil {
 		return err
