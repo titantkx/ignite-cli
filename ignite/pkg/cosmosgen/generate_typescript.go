@@ -14,8 +14,6 @@ import (
 	"github.com/ignite/cli/v29/ignite/pkg/dirchange"
 	"github.com/ignite/cli/v29/ignite/pkg/gomodulepath"
 	"github.com/ignite/cli/v29/ignite/pkg/nodetime/programs/sta"
-	tsproto "github.com/ignite/cli/v29/ignite/pkg/nodetime/programs/ts-proto"
-	"github.com/ignite/cli/v29/ignite/pkg/protoc"
 )
 
 var (
@@ -35,6 +33,14 @@ type generatePayload struct {
 
 func newTSGenerator(g *generator) *tsGenerator {
 	return &tsGenerator{g}
+}
+
+func (g *tsGenerator) tsTemplate() string {
+	return filepath.Join(g.g.appPath, g.g.protoDir, "buf.gen.ts.yaml")
+}
+
+func (g *tsGenerator) staTemplate() string {
+	return filepath.Join(g.g.appPath, g.g.protoDir, "buf.gen.sta.yaml")
 }
 
 func (g *generator) generateTS(ctx context.Context) error {
@@ -78,26 +84,12 @@ func (g *generator) generateTS(ctx context.Context) error {
 }
 
 func (g *tsGenerator) generateModuleTemplates(ctx context.Context) error {
-	protocCmd, cleanupProtoc, err := protoc.Command()
+	// code generate for each module.
+	err := g.g.buf.Generate(ctx, protoPath, tmp, g.gogoTemplate(), "module.proto")
 	if err != nil {
 		return err
 	}
 
-	defer cleanupProtoc()
-
-	tsprotoPluginPath, cleanupPlugin, err := tsproto.BinaryPath()
-	if err != nil {
-		return err
-	}
-
-	defer cleanupPlugin()
-
-	staCmd, cleanupSTA, err := sta.Command()
-	if err != nil {
-		return err
-	}
-
-	defer cleanupSTA()
 	gg := &errgroup.Group{}
 	dirCache := cache.New[[]byte](g.g.cacheStorage, dirchangeCacheNamespace)
 	add := func(sourcePath string, modules []module.Module, includes []string) {
@@ -150,12 +142,9 @@ func (g *tsGenerator) generateModuleTemplates(ctx context.Context) error {
 
 func (g *tsGenerator) generateModuleTemplate(
 	ctx context.Context,
-	protocCmd protoc.Cmd,
 	staCmd sta.Cmd,
-	tsprotoPluginPath,
 	appPath string,
 	m module.Module,
-	includePaths []string,
 ) error {
 	var (
 		out      = g.g.opts.jsOut(m)
@@ -165,33 +154,23 @@ func (g *tsGenerator) generateModuleTemplate(
 		return err
 	}
 
-	// generate ts-proto types
-	err := protoc.Generate(
-		ctx,
-		typesOut,
-		m.Pkg.Path,
-		includePaths,
-		tsOut,
-		protoc.Plugin(tsprotoPluginPath, "--ts_proto_opt=snakeToCamel=true", "--ts_proto_opt=esModuleInterop=true"),
-		protoc.Env("NODE_OPTIONS="), // unset nodejs options to avoid unexpected issues with vercel "pkg"
-		protoc.WithCommand(protocCmd),
-	)
+	// code generate for each module.
+	err := g.g.buf.Generate(ctx, m.Pkg.Path, typesOut, g.tsTemplate(), "module.proto")
 	if err != nil {
 		return err
 	}
 
 	specPath := filepath.Join(out, "api.swagger.yml")
-
 	if err = g.g.generateModuleOpenAPISpec(ctx, m, specPath); err != nil {
 		return err
 	}
+
 	// generate the REST client from the OpenAPI spec
-
-	var (
-		srcSpec = specPath
-		outREST = filepath.Join(out, "rest.ts")
-	)
-
+	outREST := filepath.Join(out, "rest.ts")
+	err := g.g.buf.Generate(ctx, srcSpec, outREST, g.staTemplate(), "module.proto")
+	if err != nil {
+		return err
+	}
 	if err := sta.Generate(ctx, outREST, srcSpec, sta.WithCommand(staCmd)); err != nil {
 		return err
 	}

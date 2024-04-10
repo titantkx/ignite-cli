@@ -30,13 +30,14 @@ type (
 )
 
 const (
-	binaryName      = "buf"
-	flagTemplate    = "template"
-	flagOutput      = "output"
-	flagErrorFormat = "error-format"
-	flagLogFormat   = "log-format"
-	flagOnly        = "only"
-	fmtJSON         = "json"
+	binaryName         = "buf"
+	flagTemplate       = "template"
+	flagOutput         = "output"
+	flagErrorFormat    = "error-format"
+	flagLogFormat      = "log-format"
+	flagIncludeImports = "include-imports"
+	flagOnly           = "only"
+	fmtJSON            = "json"
 
 	// CMDGenerate generate command.
 	CMDGenerate Command = "generate"
@@ -151,10 +152,11 @@ func (b Buf) Generate(
 	var (
 		excluded = make(map[string]struct{})
 		flags    = map[string]string{
-			flagTemplate:    template,
-			flagOutput:      output,
-			flagErrorFormat: fmtJSON,
-			flagLogFormat:   fmtJSON,
+			flagTemplate:       template,
+			flagOutput:         output,
+			flagErrorFormat:    fmtJSON,
+			flagLogFormat:      fmtJSON,
+			flagIncludeImports: "true",
 		}
 	)
 	for _, file := range excludeFilename {
