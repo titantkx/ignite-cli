@@ -1008,7 +1008,6 @@ meant to be edited by hand.
 * [ignite generate openapi](#ignite-generate-openapi)	 - OpenAPI spec for your chain
 * [ignite generate proto-go](#ignite-generate-proto-go)	 - Compile protocol buffer files to Go source code required by Cosmos SDK
 * [ignite generate ts-client](#ignite-generate-ts-client)	 - TypeScript frontend client
-* [ignite generate vuex](#ignite-generate-vuex)	 - *DEPRECATED* TypeScript frontend client and Vuex stores
 
 
 ## ignite generate composables
@@ -1160,35 +1159,6 @@ ignite generate ts-client [flags]
   -h, --help            help for ts-client
   -o, --output string   TypeScript client output path
       --use-cache       use build cache to speed-up generation
-  -y, --yes             answers interactive yes/no questions with yes
-```
-
-**Options inherited from parent commands**
-
-```
-      --clear-cache           clear the build cache (advanced)
-      --enable-proto-vendor   enable proto package vendor for missing Buf dependencies
-  -p, --path string           path of the app (default ".")
-```
-
-**SEE ALSO**
-
-* [ignite generate](#ignite-generate)	 - Generate clients, API docs from source code
-
-
-## ignite generate vuex
-
-*DEPRECATED* TypeScript frontend client and Vuex stores
-
-```
-ignite generate vuex [flags]
-```
-
-**Options**
-
-```
-  -h, --help            help for vuex
-  -o, --output string   Vuex store output path
   -y, --yes             answers interactive yes/no questions with yes
 ```
 
@@ -3101,6 +3071,7 @@ ignite scaffold chain [name] [flags]
       --no-module                create a project without a default module
       --params strings           add default module parameters
   -p, --path string              create a project in a specific path
+      --proto-dir string         chain proto directory (default "proto")
       --skip-git                 skip Git repository initialization
       --skip-proto               skip proto generation
 ```
